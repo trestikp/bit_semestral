@@ -3,7 +3,6 @@
 
 #include "aes.h"
 
-void print_input(short input[MAX_INPUT_SIZE]);
-int read_input(char *file_name, short input[MAX_INPUT_SIZE]);
+int read_input(char *file_name, unsigned char input[MAX_INPUT_SIZE], int *size);
 
 #endif

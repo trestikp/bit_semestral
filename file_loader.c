@@ -28,30 +28,32 @@ void to_hex(int c, char *res) {
 	res[1] = dec_to_hex(rest);
 }
 
-int read_input(char *file_name, short input[MAX_INPUT_SIZE]) {
+int read_input(char *file_name, unsigned char input[MAX_INPUT_SIZE], int *size) {
 	short c = '\0';
 	int i = 0;
 	FILE *f = fopen(file_name, "rb");
 
 	if(!f) return 0;
 
-	while(c != EOF) {
-//	while(1) {
-//		if(feof(f)) break;
-		c  = fgetc(f);
+	/*
+	fseek(f, 0L, SEEK_END);
+	*size = ftell(f);
+	fseek(f, 0L, SEEK_SET);
+	*/
+
+	while((c = fgetc(f)) != EOF) {
 		input[i] = c;
-		//printf("%c = %d\n", c, c);
-		//to_hex(c, input[i]);
-		//printf("%c", c);
-		//input[i] = c;
 		i++;
 	}
+
+	//printf("I: %d", i);
+	*size = i;
 
 	fclose(f);	
 	return 1;
 }
 
-
+/*
 void print_input(short input[MAX_INPUT_SIZE]) {
 //	read_input("res/message.txt");
 	//read_input("res/pokus.txt");
@@ -61,3 +63,4 @@ void print_input(short input[MAX_INPUT_SIZE]) {
 	}
 //	printf("%s\n", input);
 }
+*/
