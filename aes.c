@@ -165,6 +165,12 @@ void key_expansion(unsigned char key[BLOCK_SIZE], unsigned char round_key[BLOCK_
 		round_key[i * WORD_COUNT + 3] = round_key[i * WORD_COUNT - WORD_LENGTH_B + 3] ^ last[3];
 	}
 
+	//printf("round key: %s", round_key);
+	for(i = 0; i < (BLOCK_SIZE * ROUND_COUNT); i++) {
+		if (!(i % 16) && i > 1) printf("\n");
+		printf("%.2x ", round_key[i]);
+	}
+	printf("\n");
 }
 
 void encrypt(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char round_key[WORD_COUNT * ROUND_COUNT]) {
@@ -238,4 +244,3 @@ void print_output(int length) {
 		if(!(i % 8)) printf("\n");
 	}
 }
-

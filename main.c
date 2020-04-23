@@ -43,7 +43,8 @@ int read_input(char *file_name, int *size) {
 	unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], round_key[BLOCK_SIZE * ROUND_COUNT];
 	FILE *f;
 
-	unsigned char key[BLOCK_SIZE] = "josefvencasladek";
+//	unsigned char key[BLOCK_SIZE] = "josefvencasladek";
+	unsigned char key[BLOCK_SIZE] = "Thats my Kung Fu";
 	key_expansion(key, round_key);
         f = fopen(file_name, "rb");
 
@@ -57,7 +58,7 @@ int read_input(char *file_name, int *size) {
 
         while((c = fgetc(f)) != EOF) {
 		if(!(i % 16) && i > 1) {
-			print_state(state);
+		//	print_state(state);
 			encrypt(state, round_key);
 			print_state(state);
 		}
@@ -70,7 +71,9 @@ int read_input(char *file_name, int *size) {
                 i++;
         }
 
+
 	
+	/*
 	if(i % BLOCK_SIZE) {
 		for(j = (i % BLOCK_SIZE + 1); j < BLOCK_SIZE; j++) {
 			state[j % BLOCK_SIZE / BLOCK_RC_COUNT][j % BLOCK_RC_COUNT % BLOCK_RC_COUNT] = '\0';
@@ -79,6 +82,7 @@ int read_input(char *file_name, int *size) {
 	} else {
 		print_state(state);
 	}
+	*/
 	
 
 	//printf("i: %d\n", i);
@@ -107,7 +111,7 @@ int main(int argc, char *argv[]) {
 	unsigned char key[BLOCK_SIZE] = "josefvencasladek";	
 	unsigned char round_key[BLOCK_SIZE * ROUND_COUNT] = {'\0'};
 
-	int b = 0;
-	int *size = &b;
-	read_input("res/message.txt", size);
+	int file_size = 0;
+	read_input("res/message.txt", &file_size);
+//	print_output(file_size);
 }
