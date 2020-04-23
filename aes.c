@@ -12,7 +12,11 @@ unsigned char input[MAX_INPUT_SIZE] = {'\0'};
 //unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT] = {'\0'};
 //unsigned char state[BLOCK_SIZE] = {'\0'};
 unsigned char key[BLOCK_SIZE] = "josefvencasladek";
+unsigned char round_key[BLOCK_SIZE * ROUND_COUNT] = {'\0'};
 int file_size = 0;
+
+/* "borrowed" from wiki */
+const unsigned char Rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
 
 /*
 	look-up table for byte substitution
@@ -37,11 +41,14 @@ static unsigned char s_box[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16  // f
 	};
 
-void add_round_key(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char key[BLOCK_SIZE]) {
+void add_round_key(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT],
+		   unsigned char round_key[BLOCK_SIZE * ROUND_COUNT],
+		   short round) {
 	short i = 0, j = 0;
 	for(i = 0; i < BLOCK_SIZE; i++) {
 		for(j = 0; j < BLOCK_SIZE; j++) {
-			state[i][j] ^= key[BLOCK_SIZE*i + j];
+			state[i][j] ^= round_key[(BLOCK_SIZE * round) +
+			    			 (i * BLOCK_RC_COUNT) + j];
 		}
 	}
 }
@@ -114,6 +121,72 @@ void mix_columns(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT]) {
 		state[3][i] = res[3];
 		
 	}
+}
+
+void rot_word(unsigned char word[WORD_LENGTH_B]) {
+	unsigned char temp = '\0';
+
+	temp = word[0];
+	word[0] = word[1];
+	word[1] = word[2];
+	word[2] = word[3];
+	word[3] = temp;
+}
+
+void sub_word(unsigned char word[WORD_LENGTH_B]) {
+	word[0] = s_box[word[0]];
+	word[1] = s_box[word[1]];
+	word[2] = s_box[word[2]];
+	word[3] = s_box[word[3]];
+}
+
+void key_expansion(unsigned char key[BLOCK_SIZE], unsigned round_key[BLOCK_SIZE * ROUND_COUNT]) {
+	int i = 0, j = 0;
+	unsigned char last[WORD_LENGTH_B];
+
+	for(i = 0; i < WORD_COUNT; i++) {
+		round_key[i * WORD_COUNT + 0] = key[i * WORD_COUNT + 0];
+		round_key[i * WORD_COUNT + 1] = key[i * WORD_COUNT + 1];
+		round_key[i * WORD_COUNT + 2] = key[i * WORD_COUNT + 2];
+		round_key[i * WORD_COUNT + 3] = key[i * WORD_COUNT + 3];
+	}
+
+	for(i = WORD_COUNT; i <= WORD_COUNT * ROUND_COUNT; i++) {
+		for(j = 0; j < WORD_LENGTH_B; j++) {
+			last[j] = round_key[i * WORD_COUNT + j];
+		}
+		
+		if(i % WORD_LENGTH_B == 0) {
+			rot_word(last);
+			sub_word(last);
+			last[0] ^= Rcon[i / WORD_COUNT];
+		} else if (WORD_COUNT > 6 && i % WORD_COUNT == 4) {
+			sub_word(last);
+		}
+
+		round_key[i * WORD_COUNT + 0] = round_key[i * WORD_COUNT - WORD_LENGTH_B + 0] ^ last[0];
+		round_key[i * WORD_COUNT + 1] = round_key[i * WORD_COUNT - WORD_LENGTH_B + 1] ^ last[1];
+		round_key[i * WORD_COUNT + 2] = round_key[i * WORD_COUNT - WORD_LENGTH_B + 2] ^ last[2];
+		round_key[i * WORD_COUNT + 3] = round_key[i * WORD_COUNT - WORD_LENGTH_B + 3] ^ last[3];
+	}
+
+}
+
+void encrypt(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char round_key[WORD_COUNT * ROUND_COUNT]) {
+	int i = 0;
+
+	add_round_key(state, round_key, 0);
+
+	for(i = 1; i <= 9; i++) {
+		sub_bytes(state);
+		shift_rows(state);
+		mix_columns(state);
+		add_round_key(state, round_key, i);
+	}
+
+	sub_bytes(state);
+	shift_rows(state);
+	add_round_key(state, round_key, i);
 }
 
 void load_input(char *file_name) {
