@@ -1,24 +1,16 @@
 #include <stdio.h>
 #include "aes.h"
-#include "file_loader.h"
 
-/* buffer for input, avoiding io during runtime */
-/* *3 due to converting chars to hex in format eg: 0x[40\0] */
-//char input[MAX_INPUT_SIZE][2] = {'\0'};
-unsigned char input[MAX_INPUT_SIZE] = {'\0'};
-//short input[MAX_INPUT_SIZE] = {'\0'};
-//char *input;
-/* block of data being encoded */
-//unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT] = {'\0'};
-//unsigned char state[BLOCK_SIZE] = {'\0'};
-unsigned char key[BLOCK_SIZE] = "josefvencasladek";
-unsigned char round_key[BLOCK_SIZE * ROUND_COUNT] = {'\0'};
+unsigned char message[MAX_INPUT_SIZE] = {'\0'};
 int file_size = 0;
 
 /* "borrowed" from wiki */
-const unsigned char Rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
+//const unsigned char Rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
+const unsigned char Rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
+ 
 
 /*
+	also "borrowed" from the interent 
 	look-up table for byte substitution
 */
 static unsigned char s_box[256] = {
@@ -85,6 +77,9 @@ void shift_rows(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT]) {
 	state[3][1] = temp;
 }
 
+/*
+and this is also "borrowed" from wiki
+*/
 unsigned char gmul(unsigned char a, unsigned char b) {
 	unsigned char p = 0; /* the product of the multiplication */
 	while (a && b) {
@@ -140,7 +135,7 @@ void sub_word(unsigned char word[WORD_LENGTH_B]) {
 	word[3] = s_box[word[3]];
 }
 
-void key_expansion(unsigned char key[BLOCK_SIZE], unsigned round_key[BLOCK_SIZE * ROUND_COUNT]) {
+void key_expansion(unsigned char key[BLOCK_SIZE], unsigned char round_key[BLOCK_SIZE * ROUND_COUNT]) {
 	int i = 0, j = 0;
 	unsigned char last[WORD_LENGTH_B];
 
@@ -189,10 +184,7 @@ void encrypt(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char 
 	add_round_key(state, round_key, i);
 }
 
-void load_input(char *file_name) {
-	read_input(file_name, input, &file_size);
-}
-
+/*
 void print_state(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT]) {
 	short i = 0, j = 0;
 	for(i = 0; i < BLOCK_RC_COUNT; i++) {
@@ -202,9 +194,10 @@ void print_state(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT]) {
 		printf("\n");
 	}
 }
+*/
 
+/*
 void print_input() {
-	load_input("res/message.txt");
 //	load_input("res/pokus.txt");
 //	load_input("res/Shea.jpg");
 	printf("size: %d\n", file_size);
@@ -233,6 +226,16 @@ void print_input() {
 	int i = 0;
 	for(i = 0; i < file_size; i++) {
 		printf("%c", input[i]);
+	}
+}
+*/
+
+void print_output(int length) {
+	int i = 0;
+	
+	for(i = 0; i < length; i++) {
+		printf("%x ", message[i]);
+		if(!(i % 8)) printf("\n");
 	}
 }
 

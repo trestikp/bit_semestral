@@ -13,7 +13,8 @@
 #define WORD_COUNT 4
 
 void print_input();
-void key_expansion(unsigned char key[BLOCK_SIZE], unsigned round_key[BLOCK_SIZE * ROUND_COUNT]);
+void print_output(int length);
+void key_expansion(unsigned char key[BLOCK_SIZE], unsigned char round_key[BLOCK_SIZE * ROUND_COUNT]);
 void encrypt(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char round_key[WORD_COUNT * ROUND_COUNT]);
 
 #endif
