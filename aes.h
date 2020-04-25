@@ -2,20 +2,25 @@
 #define _AES_H
 
 /* block size in bytes */
-#define BLOCK_SIZE 16
+//#define BLOCK_SIZE 16
+#define MAGICAL_SIXTEEN 16
 /* block row column count -> 4*4 = 16 (BLOCK_SIZE) */
-#define BLOCK_RC_COUNT 4
+//#define BLOCK_RC_COUNT 4
+#define MAGICAL_FOUR 4
 /* max input size = 4MiB - 1 (for /0) */
 #define MAX_INPUT_SIZE 4194304
 
 #define ROUND_COUNT 11
-#define WORD_LENGTH_B 4
-#define WORD_COUNT 4
+
+//#define WORD_LENGTH_B 4
+//#define WORD_COUNT 4
+
+typedef unsigned char u_char;
 
 void print_input();
 void print_output(int length);
-void append_state_to_output(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], int where);
-void key_expansion(unsigned char key[BLOCK_SIZE], unsigned char round_key[BLOCK_SIZE * ROUND_COUNT]);
-void encrypt(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char round_key[WORD_COUNT * ROUND_COUNT]);
+void append_state_to_output(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], int where);
+void key_expansion(u_char key[MAGICAL_SIXTEEN], u_char round_key[MAGICAL_SIXTEEN * ROUND_COUNT]);
+void encrypt(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], u_char round_key[MAGICAL_FOUR * ROUND_COUNT]);
 
 #endif
