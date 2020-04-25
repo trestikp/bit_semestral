@@ -1,31 +1,6 @@
 #include <stdio.h>
 #include "aes.h"
 
-char dec_to_hex(int n) {
-        if(n >= 0 || n < 10) {
-                return 48 + n;
-        } else if(n >= 10 || n < 16) {
-                return 97;
-        } else {
-                return -1;
-        }
-}
-
-void to_hex(int c, char *res) {
-/* doesn't work, because chars loaded are outside range 0 - 127 
-        sprintf(res, "%x", c);  
-*/
-        // ASSUMING RANGE 0 - 256
-        int first = c / 16;
-        int rest = c % 16;
-
-        printf("BEFORE: %d %d\n", first, rest);
-        printf("AFTER: %c %c\n", dec_to_hex(first), dec_to_hex(rest));
-
-        res[0] = dec_to_hex(first);
-        res[1] = dec_to_hex(rest);
-}
-
 void print_state(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT]) {
         short i = 0, j = 0;
         for(i = 0; i < BLOCK_RC_COUNT; i++) {
@@ -43,10 +18,18 @@ int read_input(char *file_name, int *size) {
 	unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], round_key[BLOCK_SIZE * ROUND_COUNT];
 	FILE *f;
 
-//	unsigned char key[BLOCK_SIZE] = "josefvencasladek";
-	unsigned char key[BLOCK_SIZE] = "Thats my Kung Fu";
+	unsigned char key[BLOCK_SIZE] = "josefvencasladek";
+//	unsigned char key[BLOCK_SIZE] = "Thats my Kung Fu";
 	key_expansion(key, round_key);
         f = fopen(file_name, "rb");
+
+
+	/* key in hex
+	for(i = 0; i < 16; i++) {
+		printf("%.2x ", key[i]);
+	}
+	printf("\n");
+	*/
 
         if(!f) return 0;
 
@@ -58,9 +41,10 @@ int read_input(char *file_name, int *size) {
 
         while((c = fgetc(f)) != EOF) {
 		if(!(i % 16) && i > 1) {
-		//	print_state(state);
+			//print_state(state);
 			encrypt(state, round_key);
-			print_state(state);
+			append_state_to_output(state, i - BLOCK_SIZE);
+			//print_state(state);
 		}
 		a = (i % BLOCK_SIZE) / BLOCK_RC_COUNT;
 		b = (i % BLOCK_SIZE) % BLOCK_RC_COUNT;
@@ -69,49 +53,40 @@ int read_input(char *file_name, int *size) {
 		state[a][b] = c;
                 //input[i] = c;
                 i++;
+
+		/*
+		if(!((i + 1) % 16)) {
+			//print_state(state);
+			encrypt(state, round_key);
+			append_state_to_output(state, i - BLOCK_SIZE);
+			//print_state(state);
+		}
+                i++;
+		*/
         }
 
-
 	
-	/*
 	if(i % BLOCK_SIZE) {
 		for(j = (i % BLOCK_SIZE + 1); j < BLOCK_SIZE; j++) {
 			state[j % BLOCK_SIZE / BLOCK_RC_COUNT][j % BLOCK_RC_COUNT % BLOCK_RC_COUNT] = '\0';
 		}
-		print_state(state);
-	} else {
-		print_state(state);
+		encrypt(state, round_key);
+		append_state_to_output(state, i - (BLOCK_SIZE  - (i % BLOCK_SIZE)));
 	}
-	*/
 	
-
-	//printf("i: %d\n", i);
-
-        //printf("I: %d", i);
         *size = i;
 
         fclose(f);      
         return 1;
 }
 
-/*
-void print_input(short input[MAX_INPUT_SIZE]) {
-//      read_input("res/message.txt");
-        //read_input("res/pokus.txt");
-        int i = 0;
-        for (i = 0; i < 352; i++) {
-                printf("%c = %d\n", input[i], input[i]);
-        }
-//      printf("%s\n", input);
-}
-*/
-
-
 int main(int argc, char *argv[]) {
-	unsigned char key[BLOCK_SIZE] = "josefvencasladek";	
-	unsigned char round_key[BLOCK_SIZE * ROUND_COUNT] = {'\0'};
+	//unsigned char key[BLOCK_SIZE] = "josefvencasladek";	
+	//unsigned char round_key[BLOCK_SIZE * ROUND_COUNT] = {'\0'};
 
 	int file_size = 0;
-	read_input("res/message.txt", &file_size);
-//	print_output(file_size);
+	//read_input("res/message.txt", &file_size);
+	read_input("res/Shea.jpg", &file_size);
+//	read_input("res/test.txt", &file_size);
+	print_output(file_size);
 }

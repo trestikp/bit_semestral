@@ -14,6 +14,7 @@
 
 void print_input();
 void print_output(int length);
+void append_state_to_output(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], int where);
 void key_expansion(unsigned char key[BLOCK_SIZE], unsigned char round_key[BLOCK_SIZE * ROUND_COUNT]);
 void encrypt(unsigned char state[BLOCK_RC_COUNT][BLOCK_RC_COUNT], unsigned char round_key[WORD_COUNT * ROUND_COUNT]);
 
