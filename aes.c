@@ -182,8 +182,9 @@ void print_output(int length) {
 	int i = 0;
 	
 	for(i = 0; i < length; i++) {
-		printf("%.2x ", output[i]);
-		if(!((i + 1) % 8)) printf("\n");
+		printf("%.2x", output[i]);
+		if(!((i + 1) % 2)) printf(" ");
+		if(!((i + 1) % 16)) printf("\n");
 	}
 }
 
