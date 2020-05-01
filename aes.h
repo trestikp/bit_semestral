@@ -7,8 +7,8 @@
 /* block row column count -> 4*4 = 16 (BLOCK_SIZE) */
 //#define BLOCK_RC_COUNT 4
 #define MAGICAL_FOUR 4
-/* max input size = 4MiB - 1 (for /0) */
-#define MAX_INPUT_SIZE 4194304
+/* max input size = 5MiB */
+#define MAX_INPUT_SIZE 41943040
 
 #define ROUND_COUNT 11
 
@@ -22,5 +22,6 @@ void print_output(int length);
 void append_state_to_output(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], int where);
 void key_expansion(u_char key[MAGICAL_SIXTEEN], u_char round_key[MAGICAL_SIXTEEN * ROUND_COUNT]);
 void encrypt(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], u_char round_key[MAGICAL_FOUR * ROUND_COUNT]);
+u_char *get_output();
 
 #endif

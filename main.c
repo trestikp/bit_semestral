@@ -9,6 +9,22 @@ void print_help() {
 	printf("\tParameter [output_file] is file to which encrypted message is stored.\n This parameter is not required.\n");
 }
 
+int write_output_to_file(char *file_name, u_char *output, int output_size) {
+	int i = 0;
+	FILE *f = NULL;
+
+	f = fopen(file_name, "w");
+
+	if(!f) return 1;
+
+	for(i = 0; i < output_size; i++) {
+		fputc(output[i], f);
+	}
+
+	fclose(f);
+	return 0;
+}
+
 int read_input(char *file_name, int *size) {
         short c = '\0';
         int i = 0, j = 0;
@@ -69,7 +85,9 @@ void run(int argc, char *argv[]) {
 
 	if(read_input(argv[1], &file_size))
 		if(argc == 3) {
-			//TODO: print to file
+			if(write_output_to_file(argv[2], get_output(), file_size)) {
+				printf("Failed to open output file!");
+			}
 		} else {
 			print_output(file_size);
 		}

@@ -197,3 +197,7 @@ void append_state_to_output(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], int where)
 		}
 	}
 }
+
+u_char *get_output() {
+	return output;
+}
