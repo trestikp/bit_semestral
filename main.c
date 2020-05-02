@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include "aes.h"
 
-
+/**
+	Prints help on how to use the program into console.
+*/
 void print_help() {
 	printf("Usage:\n");
 	printf("aes <filename> [output_file]\n");
@@ -9,6 +11,13 @@ void print_help() {
 	printf("\tParameter [output_file] is file to which encrypted message is stored.\n This parameter is not required.\n");
 }
 
+/**
+	Writes the encryption result to a file in hexadecimal.
+
+	@param file_name = the name of the target file
+	@param output = ouput buffer with the encrypted input
+	@param output_size = size of the encrypted message (1:1 input length)
+*/
 int write_output_to_file(char *file_name, u_char *output, int output_size) {
 	int i = 0;
 	FILE *f = NULL;
@@ -25,6 +34,14 @@ int write_output_to_file(char *file_name, u_char *output, int output_size) {
 	return 0;
 }
 
+/**
+	Reads the input from a file and encrypts it. Reads by 16 bytes and encrypts them
+	right away before loading another 16 bytes. If the final state isn't 16 bytes
+	long fills with 0 from right.
+
+	@param file_name = input file
+	@param size = size of input loaded
+*/
 int read_input(char *file_name, int *size) {
         short c = '\0';
         int i = 0, j = 0;
@@ -44,23 +61,22 @@ int read_input(char *file_name, int *size) {
 		// tried if(!((i + 1) % 16)) but i dont know why that doesnt work
 		if(!(i % 16) && i > 1) {
 			encrypt(state, round_key);
-			append_state_to_output(state, i - MAGICAL_SIXTEEN);
 		}
 		state[(i % MAGICAL_SIXTEEN) / MAGICAL_FOUR][(i % MAGICAL_SIXTEEN) % MAGICAL_FOUR] = c;
                 i++;
         }
 
 	
+	// fill state with 0 if input isnt divisible by 16
 	if(i % MAGICAL_SIXTEEN) {
-		for(j = (i + 1); j < (i + (i % MAGICAL_SIXTEEN)); j++) {
+		int a = i;
+		for(j = a; j < (a + (MAGICAL_SIXTEEN - (a % MAGICAL_SIXTEEN))); j++) {
 			state[j % MAGICAL_SIXTEEN / MAGICAL_FOUR][j % MAGICAL_FOUR % MAGICAL_FOUR] = '\0';
 			i++;
 		}
-		//encrypt(state, round_key);
-		//append_state_to_output(state, i - (MAGICAL_SIXTEEN  - (i % MAGICAL_SIXTEEN)));
 	}
+	// final encrypt
 	encrypt(state, round_key);
-	append_state_to_output(state, i - (MAGICAL_SIXTEEN  - (i % MAGICAL_SIXTEEN)));
 	
         *size = i;
 
@@ -68,6 +84,9 @@ int read_input(char *file_name, int *size) {
         return 1;
 }
 
+/**
+	Processes arguments and calls all the important functions.
+*/
 void run(int argc, char *argv[]) {
 	int file_size = 0;
 
@@ -97,14 +116,11 @@ void run(int argc, char *argv[]) {
 	
 }
 
+/**
+	This doesn't need comment right?
+*/
 int main(int argc, char *argv[]) {
 	run(argc, argv);
 
 	return 0;
-	//read_input("res/message.txt", &file_size);
-	//read_input("res/Shea.jpg", &file_size);
-
-	//printf("i: %d, i16: %d\n", file_size, file_size%16);
-
-	//print_output(file_size);
 }

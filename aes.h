@@ -12,14 +12,10 @@
 
 #define ROUND_COUNT 11
 
-//#define WORD_LENGTH_B 4
-//#define WORD_COUNT 4
-
 typedef unsigned char u_char;
 
 void print_input();
 void print_output(int length);
-void append_state_to_output(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], int where);
 void key_expansion(u_char key[MAGICAL_SIXTEEN], u_char round_key[MAGICAL_SIXTEEN * ROUND_COUNT]);
 void encrypt(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], u_char round_key[MAGICAL_FOUR * ROUND_COUNT]);
 u_char *get_output();

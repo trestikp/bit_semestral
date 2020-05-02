@@ -1,15 +1,18 @@
 #include <stdio.h>
 #include "aes.h"
 
+/** output buffer */
 u_char output[MAX_INPUT_SIZE] = {'\0'};
-int file_size = 0;
 
-/* "borrowed" from wiki */
+/** Count of how many states were appended to the output buffer. */
+int state_append_count = 0;
+
+/** "borrowed" from wiki */
 //const u_char Rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
 const u_char Rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
  
 
-/*
+/**
 	also "borrowed" from the interent 
 	look-up table for byte substitution
 */
@@ -33,6 +36,13 @@ static u_char s_box[256] = {
 	0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16  // f
 	};
 
+/**
+	XOR state with round key for current round. Function generating round key later on.
+
+	@param state = 4*4 bytes state matrix
+	@param round_key = all the keys for every round => 16 bytes * number of rounds
+	@param round = which key is currently being added
+*/
 void add_round_key(u_char state[MAGICAL_FOUR][MAGICAL_FOUR],
 		   u_char round_key[MAGICAL_SIXTEEN * ROUND_COUNT],
 		   short round) {
@@ -45,6 +55,12 @@ void add_round_key(u_char state[MAGICAL_FOUR][MAGICAL_FOUR],
 	}
 }
 
+/**
+	Subs state bytes for bytes in the s_box (look up table). S_box derived from multiplicative
+	inverse over Galois Field(2^8).
+
+	@param state = 4*4 bytes state matrix
+*/
 void sub_bytes(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 	short i = 0, j = 0;
 	for(i = 0; i < MAGICAL_FOUR; i++) {
@@ -54,6 +70,13 @@ void sub_bytes(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 	}	
 }
 
+/**
+	Shift elements in rows. Row 0 = no shift. Row 1 shifts each element (byte of state) by 1. 
+	Row 2 shifts 3rd and 4th element by 2. Row 3 shifts last element by 3. All shifts are done
+	to the left.
+
+	@param state 4*4 bytes state matrix
+*/
 void shift_rows(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 	u_char temp = '\0';
 	
@@ -77,24 +100,44 @@ void shift_rows(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 	state[1][3] = temp;
 }
 
-/*
+/**
 	and this is also "borrowed" from wiki
+
+	@param a = times
+	@param b = what a times
 */
 u_char gmul(u_char a, u_char b) {
-	u_char p = 0; /* the product of the multiplication */
+	/* the product of the multiplication */
+	u_char p = 0; 
 	while (a && b) {
-            if (b & 1) /* if b is odd, then add the corresponding a to p (final product = sum of all a's corresponding to odd b's) */
-                p ^= a; /* since we're in GF(2^m), addition is an XOR */
+	    /* if b is odd, then add the corresponding a to p (final product = sum of
+	    	all a's corresponding to odd b's) */
+            if (b & 1) 
+		/* since we're in GF(2^m), addition is an XOR */
+                p ^= a; 
 
-            if (a & 0x80) /* GF modulo: if a >= 128, then it will overflow when shifted left, so reduce */
-                a = (a << 1) ^ 0x11b; /* XOR with the primitive polynomial x^8 + x^4 + x^3 + x + 1 (0b1_0001_1011) – you can change it but it must be irreducible */
+	    /* GF modulo: if a >= 128, then it will overflow when shifted left, so reduce */
+            if (a & 0x80) 
+		/* XOR with the primitive polynomial x^8 + x^4 + x^3 + x + 1 (0b1_0001_1011)
+			– you can change it but it must be irreducible */
+                a = (a << 1) ^ 0x11b; 
             else
-                a <<= 1; /* equivalent to a*2 */
-            b >>= 1; /* equivalent to b // 2 */
+		/* equivalent to a*2 */
+                a <<= 1; 
+	    /* equivalent to b // 2 */
+            b >>= 1; 
 	}
 	return p;
 }
 
+/**
+	Multiplies state and [[2, 3, 1, 1]    to mix the columns.
+			      [1, 2, 3, 1]    Needs to use the above function for
+			      [1, 1, 2, 3]    the multiplication, normal mult
+			      [3, 1, 1, 2]]   doesn't work.
+			  
+	@param state = 4*4 bytes matrix
+*/
 void mix_columns(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 	short i = 0;
 	u_char res[4] = {'\0'};
@@ -111,6 +154,11 @@ void mix_columns(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 	}
 }
 
+/**
+	Support function for key_expansion. Shifts the word by one to the left.
+
+	@param word = 4 byte word
+*/
 void rot_word(u_char word[MAGICAL_FOUR]) {
 	u_char temp = '\0';
 
@@ -121,6 +169,11 @@ void rot_word(u_char word[MAGICAL_FOUR]) {
 	word[3] = temp;
 }
 
+/**
+	Subs bytes in word for bytes from s_box lookup table.
+
+	@param word = 4 byte word
+*/
 void sub_word(u_char word[MAGICAL_FOUR]) {
 	word[0] = s_box[word[0]];
 	word[1] = s_box[word[1]];
@@ -128,11 +181,28 @@ void sub_word(u_char word[MAGICAL_FOUR]) {
 	word[3] = s_box[word[3]];
 }
 
+/**
+	AES key schedule also called Rijndael's key schedule. Expands the original key.
+	Key is made of 4 words. Each word is 4 bytes => 16 bytes key.
+	N = word count in key
+	K = the original key
+	R = number of round keys needed (11 for 128 bit AES)
+	W = expanded word
+	i = word position
+	1) If i < N => Wi = Ki
+	2) If i >= N && i % N == 0 => Wi = Wi-N ^ sub_word(rot_word(Wi-1)) ^ rcon(i/N)
+	3) If i >= N && N > 6 && i % N == 4 => Wi-N ^ sub_word(Wi-1)
+			!!This case shouldnt occur in this implementation
+	4) Any other case => Wi-N & Wi-1
+
+	@param key = original key (16 bytes)
+	@param round_key = all the keys for number of round (16 * round count bytes)
+*/
 void key_expansion(u_char key[MAGICAL_SIXTEEN], u_char round_key[MAGICAL_SIXTEEN * ROUND_COUNT]) {
 	int i = 0, j = 0;
 	u_char last[MAGICAL_FOUR];
 
-	// adds the original key to round_key on 0-15
+	// 1
 	for(i = 0; i < MAGICAL_FOUR; i++) {
 		round_key[i * MAGICAL_FOUR + 0] = key[i * MAGICAL_FOUR + 0];
 		round_key[i * MAGICAL_FOUR + 1] = key[i * MAGICAL_FOUR + 1];
@@ -140,20 +210,25 @@ void key_expansion(u_char key[MAGICAL_SIXTEEN], u_char round_key[MAGICAL_SIXTEEN
 		round_key[i * MAGICAL_FOUR + 3] = key[i * MAGICAL_FOUR + 3];
 	}
 
+	// all the words are > then key word count
 	for(i = MAGICAL_FOUR; i <= MAGICAL_FOUR * ROUND_COUNT; i++) {
+		// copy previous word
 		for(j = 0; j < MAGICAL_FOUR; j++) {
 			last[j] = round_key[(i - 1) * MAGICAL_FOUR + j];
 		}
 		
+		// 2
 		if(i % MAGICAL_FOUR == 0) {
 			rot_word(last);
 			sub_word(last);
 
 			last[0] ^= Rcon[i / MAGICAL_FOUR + 0];
 		} else if (MAGICAL_FOUR > 6 && i % MAGICAL_FOUR == 4) {
+			// 3
 			sub_word(last);
 		}
 
+		// 4 <= this always occurs for i > N
 		round_key[i * MAGICAL_FOUR + 0] = round_key[(i - MAGICAL_FOUR) * MAGICAL_FOUR + 0] ^ last[0];
 		round_key[i * MAGICAL_FOUR + 1] = round_key[(i - MAGICAL_FOUR) * MAGICAL_FOUR + 1] ^ last[1];
 		round_key[i * MAGICAL_FOUR + 2] = round_key[(i - MAGICAL_FOUR) * MAGICAL_FOUR + 2] ^ last[2];
@@ -161,6 +236,28 @@ void key_expansion(u_char key[MAGICAL_SIXTEEN], u_char round_key[MAGICAL_SIXTEEN
 	}
 }
 
+/**
+	Appends the state to the output buffer.
+
+	@param state = 4*4 bytes matrix
+	@param where = to which position write the state
+*/
+void append_state_to_output(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], int where) {
+	int i = 0, j = 0;
+
+	for(i = 0; i < MAGICAL_FOUR; i++) {
+		for(j = 0; j < MAGICAL_FOUR; j++) {
+			output[where + (i * MAGICAL_FOUR) + j] = state[i][j];
+		}
+	}
+}
+
+/**
+	Encrypt the input state using round_key and append encrypted state to output.
+
+	@param state = 4*4 bytes matrix
+	@param round_key = all the keys for every round => 16 * number of rounds bytes
+*/
 void encrypt(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], u_char round_key[MAGICAL_FOUR * ROUND_COUNT]) {
 	int i = 0;
 
@@ -176,8 +273,16 @@ void encrypt(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], u_char round_key[MAGICAL_
 	sub_bytes(state);
 	shift_rows(state);
 	add_round_key(state, round_key, i);
+
+	append_state_to_output(state, state_append_count * MAGICAL_SIXTEEN);
+	state_append_count++;
 }
 
+/**
+	Print the output to the console
+
+	@param length = length of the encrypted data (1:1 of input length)
+*/
 void print_output(int length) {
 	int i = 0;
 	
@@ -188,16 +293,9 @@ void print_output(int length) {
 	}
 }
 
-void append_state_to_output(u_char state[MAGICAL_FOUR][MAGICAL_FOUR], int where) {
-	int i = 0, j = 0;
-
-	for(i = 0; i < MAGICAL_FOUR; i++) {
-		for(j = 0; j < MAGICAL_FOUR; j++) {
-			output[where + (i * MAGICAL_FOUR) + j] = state[i][j];
-		}
-	}
-}
-
+/**
+	Returns output. Used for writing result to file.
+*/
 u_char *get_output() {
 	return output;
 }
