@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "aes.h"
 
 /**
@@ -6,8 +7,9 @@
 */
 void print_help() {
 	printf("Usage:\n");
-	printf("aes <filename> [output_file]\n");
+	printf("aes <filename> [cipher_key] [output_file]\n");
 	printf("\tParameter <filename> is the input file that is to be enrypted.\n This parameter is required.\n");
+	printf("\tParameter [cipher_key] custom 16 letter encryption key.\n This parameter is not required.\n");
 	printf("\tParameter [output_file] is file to which encrypted message is stored.\n This parameter is not required.\n");
 }
 
@@ -42,13 +44,13 @@ int write_output_to_file(char *file_name, u_char *output, int output_size) {
 	@param file_name = input file
 	@param size = size of input loaded
 */
-int read_input(char *file_name, int *size) {
+int read_input(char *file_name, int *size, u_char key[MAGICAL_SIXTEEN]) {
         short c = '\0';
         int i = 0, j = 0;
 	u_char state[MAGICAL_FOUR][MAGICAL_FOUR], round_key[MAGICAL_SIXTEEN * ROUND_COUNT];
 	FILE *f;
 
-	u_char key[MAGICAL_SIXTEEN] = "josefvencasladek";
+	//u_char key[MAGICAL_SIXTEEN] = "josefvencasladek";
 	key_expansion(key, round_key);
         f = fopen(file_name, "rb");
 
@@ -89,6 +91,7 @@ int read_input(char *file_name, int *size) {
 */
 void run(int argc, char *argv[]) {
 	int file_size = 0;
+	u_char key[MAGICAL_SIXTEEN] = "josefvencasladek";
 
 	if(argc < 2) {
 		printf("A parameter is required!\n");
@@ -96,22 +99,38 @@ void run(int argc, char *argv[]) {
 		return;
 	}
 
-	if(argc > 3) {
+	if(argc > 4) {
 		printf("Too many arguments!\n");
 		print_help();
 		return;
 	}
 
-	if(read_input(argv[1], &file_size))
-		if(argc == 3) {
-			if(write_output_to_file(argv[2], get_output(), file_size)) {
-				printf("Failed to open output file!");
+
+	if(argc >= 3) {
+		if(strlen(argv[2]) < 16) {
+			printf("Entered key is too short!\n");
+			return;
+		} else if(strlen(argv[2]) > 16) {
+			printf("Entered key is too long!\n");
+			return;
+		} else {
+			strcpy((char*) key, argv[2]);
+		}
+	}
+		
+	if(read_input(argv[1], &file_size, key))
+		if (argc == 4) {
+			if(write_output_to_file(argv[3], get_output(), file_size)) {
+				printf("Failed to open output file!\n");
+				return;
 			}
 		} else {
 			print_output(file_size);
 		}
-	else
+	else {
+		printf("Failed to read input file!\n");
 		return;
+	}
 	
 	
 }
