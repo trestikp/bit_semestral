@@ -7,13 +7,18 @@ u_char output[MAX_INPUT_SIZE] = {'\0'};
 /** Count of how many states were appended to the output buffer. */
 int state_append_count = 0;
 
-/** "borrowed" from wiki */
-//const u_char Rcon[10] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
+/**
+	"borrowed" from internet
+	source: https://github.com/kokke/tiny-AES-c/blob/master/aes.c	
+	the one i copied from wiki didn't work
+*/
 const u_char Rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36};
  
 
 /**
 	also "borrowed" from the interent 
+	source:	https://github.com/dhuertas/AES/blob/master/aes.c
+	(i was too lazy to rewrite it from wiki)
 	look-up table for byte substitution
 */
 const u_char s_box[256] = {
@@ -101,7 +106,8 @@ void shift_rows(u_char state[MAGICAL_FOUR][MAGICAL_FOUR]) {
 }
 
 /**
-	and this is also "borrowed" from wiki
+	and this is also "borrowed" from the internet
+	source: https://en.wikipedia.org/wiki/Finite_field_arithmetic
 
 	@param a = times
 	@param b = what a times
