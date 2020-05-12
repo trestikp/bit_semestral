@@ -105,6 +105,10 @@ void run(int argc, char *argv[]) {
 		return;
 	}
 
+	if(argc == 2 && !strcmp(argv[1], "-h")) {
+		print_help();
+		return;
+	}
 
 	if(argc >= 3) {
 		if(strlen(argv[2]) < 16) {
