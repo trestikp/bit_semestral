@@ -7,10 +7,12 @@
 */
 void print_help() {
 	printf("Usage:\n");
-	printf("aes <filename> [cipher_key] [output_file]\n");
-	printf("\tParameter <filename> is the input file that is to be enrypted.\n This parameter is required.\n");
-	printf("\tParameter [cipher_key] custom 16 letter encryption key.\n This parameter is not required.\n");
-	printf("\tParameter [output_file] is file to which encrypted message is stored.\n This parameter is not required.\n");
+	printf("aes <input_name> -k [cipher_key] -o [output_file]\n\n");
+	printf("Parameter <input_name> is the input file that is to be enrypted.\n\tThis parameter is required.\n");
+	printf("If option -k is used it is expected to be followed by [cipher_key].\
+		\n\tWhich is 16 custom letter encryption key.\n");
+	printf("If option -o is used it is expected to be followed by [output_file].\
+		\n\tThis is target file where the encrypted data will be written.\n");
 }
 
 /**
@@ -87,11 +89,27 @@ int read_input(char *file_name, int *size, u_char key[MAGICAL_SIXTEEN]) {
 }
 
 /**
+	Added support function for parametr extraction. Extracts key from argument.
+*/
+void extract_key(char *argv, u_char key[MAGICAL_SIXTEEN]) {
+	if(strlen(argv) < 16) {
+		printf("Entered key is too short!\n");
+		return;
+	} else if(strlen(argv) > 16) {
+		printf("Entered key is too long!\n");
+		return;
+	} else {
+		strcpy((char*) key, argv);
+	}
+}
+
+/**
 	Processes arguments and calls all the important functions.
 */
 void run(int argc, char *argv[]) {
 	int file_size = 0;
 	u_char key[MAGICAL_SIXTEEN] = "josefvencasladek";
+	char *output_file = NULL;
 
 	if(argc < 2) {
 		printf("A parameter is required!\n");
@@ -99,44 +117,62 @@ void run(int argc, char *argv[]) {
 		return;
 	}
 
-	if(argc > 4) {
+	if(argc > 6) {
 		printf("Too many arguments!\n");
 		print_help();
 		return;
 	}
 
-	if(argc == 2 && !strcmp(argv[1], "-h")) {
-		print_help();
-		return;
+	switch(argc) {
+		case 2: break;
+		case 4:
+			if(!strcmp(argv[2], "-k")) {
+				extract_key(argv[3], key);
+			} else if(!strcmp(argv[2], "-o")) {
+				output_file = argv[3];
+			} else {
+				printf("Unknown option %s\n", argv[2]);
+				return;
+			}
+			break;
+		case 6:
+			if(!strcmp(argv[2], "-k")) {
+				extract_key(argv[3], key);
+			} else if(!strcmp(argv[2], "-o")) {
+				output_file = argv[3];
+			} else {
+				printf("Unknown option %s\n", argv[2]);
+				return;
+			}
+
+			if(!strcmp(argv[4], "-k")) {
+				extract_key(argv[5], key);
+			} else if(!strcmp(argv[4], "-o")) {
+				output_file = argv[5];
+			} else {
+				printf("Unknown option %s\n", argv[4]);
+				return;
+			}
+			break;
+		default:
+			printf("Invalid argument count!\n");
+			print_help();
+			return;
 	}
 
-	if(argc >= 3) {
-		if(strlen(argv[2]) < 16) {
-			printf("Entered key is too short!\n");
-			return;
-		} else if(strlen(argv[2]) > 16) {
-			printf("Entered key is too long!\n");
-			return;
-		} else {
-			strcpy((char*) key, argv[2]);
-		}
-	}
-		
-	if(read_input(argv[1], &file_size, key))
-		if (argc == 4) {
-			if(write_output_to_file(argv[3], get_output(), file_size)) {
+	if(!read_input(argv[1], &file_size, key)) {
+		printf("Failed to read input file!\n");
+		return;
+	} else {
+		if(output_file) {
+			if(write_output_to_file(output_file, get_output(), file_size)) {
 				printf("Failed to open output file!\n");
 				return;
 			}
 		} else {
 			print_output(file_size);
 		}
-	else {
-		printf("Failed to read input file!\n");
-		return;
 	}
-	
-	
 }
 
 /**
